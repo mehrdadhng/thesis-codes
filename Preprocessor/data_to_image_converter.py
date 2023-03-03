@@ -25,12 +25,12 @@ indices_per_host = np.array(indices_per_host)
 #####################
 
 #Choose distribution
-# distro = "Poisson"
+distro = "Poisson"
 # distro = "Normal"
-distro = "mixedPoisson"
+# distro = "mixedPoisson"
 #####################
 
-raw_dataset_path = "../data/samples/"+distro+"/samples.csv"
+raw_dataset_path = "../data/samples/"+distro+"/samples1000.csv"
 folder = "../data/samples/"+distro+"/samples_images/"
 
 df = pd.read_csv(raw_dataset_path)

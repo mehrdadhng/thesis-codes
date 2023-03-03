@@ -6,56 +6,52 @@ import time
 from scipy.linalg import khatri_rao
 from sklearn.metrics import mean_squared_error
 
-od_list = list(pd.read_csv("../data/ods.csv").to_numpy())
+use_preprocessor = True
+
+if use_preprocessor:
+    od_list = list(pd.read_csv("../data/preprocessor_data/ods.csv").to_numpy())
+    routing_matrix = pd.read_csv("../data/preprocessor_data/routing_matrix.csv").to_numpy()
+    edge_list = list(pd.read_csv("../data/preprocessor_data/edges.csv").to_numpy())
+    edges_to_kepp = pd.read_csv("../data/preprocessor_data/edges_to_keep.csv").to_numpy().flatten()
+else:
+    od_list = list(pd.read_csv("../data/ods.csv").to_numpy())
+    routing_matrix = pd.read_csv("../data/routing_matrix.csv").to_numpy()
+    edge_list = list(pd.read_csv("../data/edges.csv").to_numpy())
 node_list = list(pd.read_csv("../data/nodes.csv").to_numpy().flatten())
 host_list = list(pd.read_csv("../data/hosts.csv").to_numpy().flatten())
 switch_list = list(pd.read_csv("../data/switches.csv").to_numpy().flatten())
-edge_list = list(pd.read_csv("../data/edges.csv").to_numpy())
-routing_matrix = pd.read_csv("../data/routing_matrix.csv").to_numpy()
-
-indices_per_host = []
-for host in host_list:
-    temp = []
-    for i in range(len(od_list)):
-        od = od_list[i]
-        if od[0] == host:
-            temp.append(i)
-    indices_per_host.append(temp)
-indices_per_host = np.array(indices_per_host)
-
-#Choose heavy hitters
-critical_devices = [host_list[0], host_list[10]]
-#####################
-
-normal_range = [20,100]
-heavy_range = [130,200]
-
-#lambdas initialization
-lambdas = np.random.randint(normal_range[0],normal_range[1],size = routing_matrix.shape[1])
-#adding active flows
-for cd in critical_devices:
-    lambdas[indices_per_host[cd]] = np.random.randint(heavy_range[0], heavy_range[1], len(indices_per_host[cd]))
 
 
+
+# indices_per_host = []
+# for host in host_list:
+#     temp = []
+#     for i in range(len(od_list)):
+#         od = od_list[i]
+#         if od[0] == host:
+#             temp.append(i)
+#     indices_per_host.append(temp)
+# indices_per_host = np.array(indices_per_host)
+
+lambdas = pd.read_csv("../data/samples/lambdas.csv").to_numpy().flatten()
 est_list = []
 sample_sizes = [100,500,1000,2500,5000]
+sample_sizes = [100,2500]
 process_times = []
 M = routing_matrix.shape[0]
 L = routing_matrix.shape[1]
-num_of_runs_per_sample_size = 5
+num_of_runs_per_sample_size = 2
 print("runs per sample size: " + str(num_of_runs_per_sample_size))
 print()
-
 for ss in sample_sizes:
     print("sample size: " + str(ss))
     for count in range(num_of_runs_per_sample_size):
         start = time.process_time_ns()
         print("   .....run: " + str(count + 1))
         N = ss
-        X = np.zeros((L,N))
-        for j in range(L):
-            X[j,:] = np.random.poisson(lam=lambdas[j], size = N)
-        Y = routing_matrix @ X
+        Y = pd.read_csv("../data/samples/Poisson/samples"+str(N)+".csv").to_numpy()[:,:-1].T
+        if use_preprocessor:
+            Y = Y[edges_to_kepp,:]
         epsilon = 0.01
         gamma = 0.0005
         theta = np.random.uniform(low = 0, high = 0.001 , size = M).reshape((M,1))
@@ -99,15 +95,16 @@ for i in range(len(sample_sizes)):
 plt.plot(sample_sizes,pt,'o-',color='red')
 plt.show()
 
-error_list = []
-for i in range(len(sample_sizes)):
-    etemp = []
-    for j in range(num_of_runs_per_sample_size):
-        etemp.append(mean_squared_error(lambdas,est_list[i*num_of_runs_per_sample_size+j]))
-    error_list.append(np.mean(etemp))
+if not use_preprocessor:
+    error_list = []
+    for i in range(len(sample_sizes)):
+        etemp = []
+        for j in range(num_of_runs_per_sample_size):
+            etemp.append(mean_squared_error(lambdas,est_list[i*num_of_runs_per_sample_size+j]))
+        error_list.append(np.mean(etemp))
 
-for i in range(len(sample_sizes)):
-    print("sample size: " + str(sample_sizes[i]) + "     MSE: " + str(error_list[i]))
+    for i in range(len(sample_sizes)):
+        print("sample size: " + str(sample_sizes[i]) + "     MSE: " + str(error_list[i]))
 
 
 scores_unlimited = []
@@ -131,7 +128,11 @@ for i in range(len(sample_sizes)):
 print()
 
 scores_limited = []
-num_of_hot_flows_list = [len(host_list) - 1, 100, 250]
+if not use_preprocessor:
+    num_of_hot_flows_list = [len(host_list) - 1, 100, 250]
+else:
+    # Based on keeping 10 hosts in preprocessor
+    num_of_hot_flows_list = [9, 20, 45]
 for row in range(len(sample_sizes)):
     sl_temp = []
     for col in range(num_of_runs_per_sample_size):

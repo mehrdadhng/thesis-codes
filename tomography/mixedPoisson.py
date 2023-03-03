@@ -6,12 +6,19 @@ import time
 from scipy.linalg import khatri_rao
 from sklearn.metrics import mean_squared_error
 
-od_list = list(pd.read_csv("../data/ods.csv").to_numpy())
+use_preprocessor = False
+
+if use_preprocessor:
+    od_list = list(pd.read_csv("../data/preprocessor_data/ods.csv").to_numpy())
+    routing_matrix = pd.read_csv("../data/preprocessor_data/routing_matrix.csv").to_numpy()
+else:
+    od_list = list(pd.read_csv("../data/ods.csv").to_numpy())
+    routing_matrix = pd.read_csv("../data/routing_matrix.csv").to_numpy()
+
 node_list = list(pd.read_csv("../data/nodes.csv").to_numpy().flatten())
 host_list = list(pd.read_csv("../data/hosts.csv").to_numpy().flatten())
 switch_list = list(pd.read_csv("../data/switches.csv").to_numpy().flatten())
 edge_list = list(pd.read_csv("../data/edges.csv").to_numpy())
-routing_matrix = pd.read_csv("../data/routing_matrix.csv").to_numpy()
 
 indices_per_host = []
 for host in host_list:
@@ -23,26 +30,15 @@ for host in host_list:
     indices_per_host.append(temp)
 indices_per_host = np.array(indices_per_host)
 
-#Choose heavy hitters
-critical_devices = [host_list[0], host_list[10]]
-#####################
 
-normal_range = [20,100]
-heavy_range = [130,200]
-
-#lambdas initialization
-lambdas = np.random.randint(normal_range[0],normal_range[1],size = routing_matrix.shape[1])
-#adding active flows
-for cd in critical_devices:
-    lambdas[indices_per_host[cd]] = np.random.randint(heavy_range[0], heavy_range[1], len(indices_per_host[cd]))
-
-
+lambdas = pd.read_csv("../data/samples/lambdas.csv").to_numpy().flatten()
 est_list = []
 sample_sizes = [100,500,1000,2500,5000]
+est_list = []
 process_times = []
 M = routing_matrix.shape[0]
 L = routing_matrix.shape[1]
-num_of_runs_per_sample_size = 20
+num_of_runs_per_sample_size = 3
 print("runs per sample size: " + str(num_of_runs_per_sample_size))
 print()
 
@@ -52,16 +48,7 @@ for ss in sample_sizes:
         start = time.process_time_ns()
         print("   .....run: " + str(count + 1))
         N = ss
-        X = np.zeros((L,N))
-        rs = np.random.randint(low=normal_range[0], high=normal_range[1], size=L)
-        betas = rs/(rs + lambdas)
-        for j in range(L):
-            X[j, :] = np.random.negative_binomial(rs[j], betas[j], size=N)
-        Y = routing_matrix @ X    
-        for i1 in range(len(Y)):
-            for i2 in range(len(Y[i1])):
-                if Y[i1][i2] < 0:
-                    Y[i1][i2] = 0
+        Y = pd.read_csv("../data/samples/mixedPoisson/samples"+str(N)+".csv").to_numpy()[:,:-1].T  
         epsilon = 0.01
         gamma = 0.0005
         A_r = np.zeros((M + M**2,2*L))
@@ -117,7 +104,6 @@ for i in range(len(sample_sizes)):
 
 for i in range(len(sample_sizes)):
     print("sample size: " + str(sample_sizes[i]) + "     MSE: " + str(error_list[i]))
-
 
 scores_unlimited = []
 for row in range(len(sample_sizes)):
