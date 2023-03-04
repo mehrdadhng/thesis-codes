@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error
 from scipy.optimize import fsolve
 sqrt = np.emath.sqrt
 
-use_preprocessor = False
+use_preprocessor = True
 
 if use_preprocessor:
     od_list = list(pd.read_csv("../data/preprocessor_data/ods.csv").to_numpy())
@@ -197,9 +197,9 @@ for itr in itrs:
         print("   .....run: " + str(count + 1))
         N = 50
         max_iteration = itr
-        Y = pd.read_csv("../data/samples/Noramal/samples50.csv").to_numpy()[:,:-1].T 
+        Y = pd.read_csv("../data/samples/Normal/samples50.csv").to_numpy()[:,:-1]
         if use_preprocessor:
-            Y = Y[edges_to_kepp,:] 
+            Y = Y[:,edges_to_kepp] 
         initial_means, initial_phi = init_params(Y.shape[0], observed_samples=Y, routing_matrix=routing_matrix, od_count=len(od_list))
         A = routing_matrix
         sub_chosen_rows, involved_X_indices, sub_routing_matricies = make_sub_problems(A)
@@ -220,15 +220,16 @@ for i in range(len(itrs)):
 plt.plot(itrs,pt,'o-',color='red')
 plt.show()
 
-error_list = []
-for i in range(len(itrs)):
-    etemp = []
-    for j in range(num_of_runs_per_sample_size):
-        etemp.append(mean_squared_error(lambdas,est_list[i*num_of_runs_per_sample_size+j]))
-    error_list.append(np.mean(etemp))
+if not use_preprocessor:
+    error_list = []
+    for i in range(len(itrs)):
+        etemp = []
+        for j in range(num_of_runs_per_sample_size):
+            etemp.append(mean_squared_error(lambdas,est_list[i*num_of_runs_per_sample_size+j]))
+        error_list.append(np.mean(etemp))
 
-for i in range(len(itrs)):
-    print("sample size: 50 and Max iteration:  " + str(itrs[i]) + "     MSE: " + str(error_list[i]))
+    for i in range(len(itrs)):
+        print("sample size: 50 and Max iteration:  " + str(itrs[i]) + "     MSE: " + str(error_list[i]))
 
 
 scores_unlimited = []
