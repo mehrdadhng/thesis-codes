@@ -29,8 +29,8 @@ indices_per_host = np.array(indices_per_host)
 lambdas = pd.read_csv("../data/samples/lambdas.csv").to_numpy().flatten()
 
 #Choose distribution
-distro = "Poisson"
-# distro = "Normal"
+# distro = "Poisson"
+distro = "Normal"
 # distro = "mixedPoisson"
 #####################
 

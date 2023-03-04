@@ -11,24 +11,26 @@ use_preprocessor = False
 if use_preprocessor:
     od_list = list(pd.read_csv("../data/preprocessor_data/ods.csv").to_numpy())
     routing_matrix = pd.read_csv("../data/preprocessor_data/routing_matrix.csv").to_numpy()
+    edge_list = list(pd.read_csv("../data/preprocessor_data/edges.csv").to_numpy())
+    edges_to_kepp = pd.read_csv("../data/preprocessor_data/edges_to_keep.csv").to_numpy().flatten()
 else:
     od_list = list(pd.read_csv("../data/ods.csv").to_numpy())
     routing_matrix = pd.read_csv("../data/routing_matrix.csv").to_numpy()
+    edge_list = list(pd.read_csv("../data/edges.csv").to_numpy())
 
 node_list = list(pd.read_csv("../data/nodes.csv").to_numpy().flatten())
 host_list = list(pd.read_csv("../data/hosts.csv").to_numpy().flatten())
 switch_list = list(pd.read_csv("../data/switches.csv").to_numpy().flatten())
-edge_list = list(pd.read_csv("../data/edges.csv").to_numpy())
 
-indices_per_host = []
-for host in host_list:
-    temp = []
-    for i in range(len(od_list)):
-        od = od_list[i]
-        if od[0] == host:
-            temp.append(i)
-    indices_per_host.append(temp)
-indices_per_host = np.array(indices_per_host)
+# indices_per_host = []
+# for host in host_list:
+#     temp = []
+#     for i in range(len(od_list)):
+#         od = od_list[i]
+#         if od[0] == host:
+#             temp.append(i)
+#     indices_per_host.append(temp)
+# indices_per_host = np.array(indices_per_host)
 
 
 lambdas = pd.read_csv("../data/samples/lambdas.csv").to_numpy().flatten()
@@ -48,7 +50,9 @@ for ss in sample_sizes:
         start = time.process_time_ns()
         print("   .....run: " + str(count + 1))
         N = ss
-        Y = pd.read_csv("../data/samples/mixedPoisson/samples"+str(N)+".csv").to_numpy()[:,:-1].T  
+        Y = pd.read_csv("../data/samples/mixedPoisson/samples"+str(N)+".csv").to_numpy()[:,:-1].T 
+        if use_preprocessor:
+            Y = Y[edges_to_kepp,:] 
         epsilon = 0.01
         gamma = 0.0005
         A_r = np.zeros((M + M**2,2*L))
